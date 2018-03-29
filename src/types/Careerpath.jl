@@ -11,10 +11,10 @@ export CareerPath
 type CareerPath
 
     # Status table
-    Path::Array{CareerStatus}
+    Path::Vector{CareerStatus}
 
     # the activated levels with academic level being 0
     ActivitedLevels::Int
 
-
+    CareerPath() = new(Vector{CareerStatus}(), -1)
 end

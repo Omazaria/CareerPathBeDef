@@ -1,4 +1,4 @@
-requiredTypes = [ "" ]
+requiredTypes = [ ]
 
 for reqType in requiredTypes
     if !isdefined( Symbol( uppercase( string( reqType[ 1 ] ) ) * reqType[ 2:end ] ) )
@@ -8,9 +8,9 @@ end
 
 
 # _______________________________________________________________type
+
 export AbstractLevel
 abstract type AbstractLevel end
-
 
 # _______________________________________________________________functions
 

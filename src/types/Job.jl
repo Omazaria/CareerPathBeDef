@@ -2,13 +2,13 @@ requiredTypes = [ "AbstractLevel" ]
 
 for reqType in requiredTypes
     if !isdefined( Symbol( uppercase( string( reqType[ 1 ] ) ) * reqType[ 2:end ] ) )
-        include( joinpath( dirname( Base.source_path() ), reqType * ".jl" ) )
+        include(  reqType * ".jl" ) 
     end  # if !isdefined( Symbol( ...
 end
 
 export Job
 
-type Job
+type Job <: AbstractLevel
 
     # Name of the Job ex: 01 => _01
     Name::String

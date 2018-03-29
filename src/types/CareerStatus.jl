@@ -1,4 +1,4 @@
-requiredTypes = [ "AbstractLevel" ]
+requiredTypes = [ "AcademicLevel", "Affiliation", "Assignment", "Job", "Rank", "SubJob" ]
 
 for reqType in requiredTypes
     if !isdefined( Symbol( uppercase( string( reqType[ 1 ] ) ) * reqType[ 2:end ] ) )
@@ -10,18 +10,17 @@ export CareerStatus
 
 type CareerStatus
 
-    academicLevel::AbstractLevel
-    rank::AbstractLevel
-    assignment::AbstractLevel
-    affiliation::AbstractLevel
-    job::AbstractLevel
-    subJob::AbstractLevel
+    AcademicLevel::AbstractLevel
+    Rank::AbstractLevel
+    Assignment::AbstractLevel
+    Affiliation::AbstractLevel
+    Job::AbstractLevel
+    SubJob::AbstractLevel
 
-    CareerStatus() = new(AbstractLevel(),
-                         AbstractLevel(),
-                         AbstractLevel(),
-                         AbstractLevel(),
-                         AbstractLevel(),
-                         AbstractLevel())
-
+    CareerStatus(;academicLevel::AbstractLevel = AcademicLevel(),
+                  rank::AbstractLevel = Rank(),
+                  assignment::AbstractLevel = Assignment(),
+                  affiliation::AbstractLevel = Affiliation(),
+                  job::AbstractLevel = Job(),
+                  subjob::AbstractLevel = SubJob()) = new(academicLevel, rank, assignment, affiliation, job, subjob)
 end

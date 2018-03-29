@@ -2,13 +2,13 @@ requiredTypes = [ "AbstractLevel" ]
 
 for reqType in requiredTypes
     if !isdefined( Symbol( uppercase( string( reqType[ 1 ] ) ) * reqType[ 2:end ] ) )
-        include( joinpath( dirname( Base.source_path() ), reqType * ".jl" ) )
+        include(  reqType * ".jl" ) 
     end  # if !isdefined( Symbol( ...
 end
 
 export Rank
 
-type Rank
+type Rank <: AbstractLevel
 
     # Name of the Rank ex: LT, CPN
     Name::String
