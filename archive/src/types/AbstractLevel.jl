@@ -19,9 +19,17 @@ function setName(lvl::AbstractLevel, name::String)
 end
 
 function setMinStay(lvl::AbstractLevel, min::Int)
-    lvl.MinStay = name
+    lvl.MinStay = min
 end
 
 function setMaxStay(lvl::AbstractLevel, max::Int)
-    lvl.MaxStay = name
+    lvl.MaxStay = max
+end
+
+function getMinStay(lvl::AbstractLevel)
+    return lvl.MinStay
+end
+
+function getMaxStay(lvl::AbstractLevel)
+    return lvl.MaxStay
 end
