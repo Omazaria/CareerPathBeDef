@@ -19,11 +19,17 @@ type CareerPath
     # Assignment        2       SubJob              5
     ActivatedLevels::Vector{Int}
 
-    CareerPath() = new(Vector{CareerStatus}(), Vector{Int}())
+    Length::Int
+
+    RecruitmentAge::Int
+
+    CareerPath() = new(Vector{CareerStatus}(), Vector{Int}(), 0, 19)
     function CareerPath(careerpath::CareerPath)
         cp = new()
         cp.Path = copy(careerpath.Path)
         cp.ActivatedLevels = copy(careerpath.ActivatedLevels)
+        cp.Length = careerpath.Length
+        cp.RecruitmentAge = careerpath.RecruitmentAge
         return cp
     end
 end
@@ -34,11 +40,3 @@ LevelsCodes = Dict{DataType, Int}(AcademicLevel => 0,
                                   Affiliation => 3,
                                   Job => 4,
                                   SubJob => 5)
-
-function ActivateLevel(careerpath::CareerPath, level::DataType)
-    push!(careerpath.ActivatedLevels, LevelsCodes[level])
-end
-
-function isActivatedLevel(careerpath::CareerPath, level::DataType)
-    return LevelsCodes[level] in careerpath.ActivatedLevels
-end
