@@ -190,6 +190,6 @@ for i in 1:(length(MPObjectives) * NBYears)
     end
 end
 
-try rm(joinpath( dirname( Base.source_path() ), "..", "..", "..", "Results_$SimulationName.xlsx" )) end
-write(joinpath( dirname( Base.source_path() ), "..", "..", "..", "Results_$SimulationName.xlsx" ), CPworkbookResults)
+try rm(joinpath( dirname( Base.source_path() ), "..", "Results_$SimulationName.xlsx" )) end
+write(joinpath( dirname( Base.source_path() ), "..", "Results_$SimulationName.xlsx" ), CPworkbookResults)
 #XlsxFile, CPworkbookResults)#
