@@ -34,7 +34,12 @@ for i in 1:NBYears
     Cell=createCell(Row, cellIdx); setCellValue(Cell, i)
     cellIdx += 1
     for j in 1:length(MPObjectives)
-        Cell=createCell(Row, cellIdx); setCellValue(Cell, round(Int, RequirementFulfillment[i, j]))
+        Cell=createCell(Row, cellIdx);
+        if IntegerSolution
+            setCellValue(Cell, round(Int, RequirementFulfillment[i, j]))
+        else
+            setCellValue(Cell, RequirementFulfillment[i, j])
+        end
         cellIdx += 1
     end
 end
@@ -190,6 +195,6 @@ for i in 1:(length(MPObjectives) * NBYears)
     end
 end
 
-try rm(joinpath( dirname( Base.source_path() ), "..", "Results_$SimulationName.xlsx" )) end
-write(joinpath( dirname( Base.source_path() ), "..", "Results_$SimulationName.xlsx" ), CPworkbookResults)
+try rm(joinpath( dirname( Base.source_path() ), "..", "..", "Results_$SimulationName.xlsx" )) end
+write(joinpath( dirname( Base.source_path() ), "..", "..", "Results_$SimulationName.xlsx" ), CPworkbookResults)
 #XlsxFile, CPworkbookResults)#

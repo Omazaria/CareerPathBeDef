@@ -12,8 +12,6 @@ end
 
 MaxCareerPathLength = 40
 
-SimulationYear = 2018
-
 requiredData = ["CPByGuyAllpop"] # GuyCareerPaths , InitManpower , MPObjectives
 
 for reqData in requiredData
@@ -160,15 +158,19 @@ for imp in 1:length(InitManpower)
                 break
             end
             for k in 1:length(SetsPartCPinGoals[InitMPPartCP[imp][i]][indx])
-                if (j - 1) <= NBYears
+                #if TempActualVar < 220
+                #    print(j - 1, " ")
+                #end
+                if (j - InitManpower[imp].Seniority - 1) <= NBYears
                     A[InitConst + RecruitmentConst + (j - InitManpower[imp].Seniority - 1)*length(MPObjectives) + SetsPartCPinGoals[InitMPPartCP[imp][i]][indx][k], TempActualVar] = 1
+                    #print(TempActualVar, " ")
                 end
             end
         end
         TempActualVar += 1
     end
 end
-
+println("Final InitMP = $TempActualVar")
             # Annual Recruitment participation
 
 for y in 1:NBYears
@@ -202,14 +204,14 @@ end
 for i in 1:NBYears-1
     for j in 1:length(GuyCareerPaths)
         A[InitConst + RecruitmentConst + GoalsConst + i, InitMPDivisionNb + (i)*length(GuyCareerPaths) + j] = 1
-        A[InitConst + RecruitmentConst + GoalsConst + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -1.10
+        A[InitConst + RecruitmentConst + GoalsConst + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -( 1 +  AllowableDeviation)
     end
 end
 
 for i in 1:NBYears-1
     for j in 1:length(GuyCareerPaths)
         A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + i, InitMPDivisionNb + (i)*length(GuyCareerPaths) + j] = 1
-        A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -0.90
+        A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -(1 - AllowableDeviation)
     end
 end
     # Fill sense
@@ -252,7 +254,11 @@ writedlm("matrix.txt", A)
 println("Solving LP...")
 using MathProgBase, CPLEX#, Gurobi
 stattoendStart = now()
-sol = mixintprog(Cost, A, sense, b, vartypes, 0, Inf, CplexSolver(CPXPARAM_MIP_Tolerances_MIPGap=Tolerances_MIPGap))#CbcSolver(allowableGap=0.8)) #GurobiSolver(Presolve=0)
+if IntegerSolution
+    sol = mixintprog(Cost, A, sense, b, vartypes, 0, Inf, CplexSolver(CPXPARAM_MIP_Tolerances_MIPGap=Tolerances_MIPGap))#CbcSolver(allowableGap=0.8)) #GurobiSolver(Presolve=0)
+else
+    sol = linprog(Cost, A, sense, b, 0, Inf, CplexSolver())
+end
 stattoendEnd = now()
 println( "ended with: $(sol.status). Elapsed time: $(Dates.canonicalize(Dates.CompoundPeriod(Dates.Millisecond(stattoendEnd - stattoendStart))))." )
 writedlm("solution.txt", sol.sol)
@@ -261,12 +267,12 @@ writedlm("solution.txt", sol.sol)
 # Computing results
 
 RequirementFulfillment = zeros(Float64, NBYears, length(MPObjectives))
-
+sumi = 0
 for i in 1:NBYears
     for j in 1:length(MPObjectives)
         for k in 1:(InitMPDivisionNb + AnnualRecDivNb)
             if A[InitConst + RecruitmentConst + (i - 1)*length(MPObjectives) + j, k] != 0
-                RequirementFulfillment[i, j] += round(Int, sol.sol[k]*A[InitConst + RecruitmentConst + (i - 1)*length(MPObjectives) + j, k])
+                RequirementFulfillment[i, j] +=  sol.sol[k]*A[InitConst + RecruitmentConst + (i - 1)*length(MPObjectives) + j, k]#round(Int,)
             end
         end
     end

@@ -75,6 +75,8 @@ MPObjectives = Vector{ManpowerObjective}()
 SimulationName = getCellValue(getCell(getRow(GIsheet, 0), 1))
 SaveInputs = (getCellValue(getCell(getRow(GIsheet, 1), 1)) == "Yes")
 Tolerances_MIPGap = getCellValue(getCell(getRow(GIsheet, 2), 1))
+IntegerSolution = (getCellValue(getCell(getRow(GIsheet, 3), 1)) == "Yes")
+SimulationYear = Int(getCellValue(getCell(getRow(GIsheet, 4), 1)))
 
 println("Simulation : $SimulationName, saving input data : $SaveInputs.")
 
@@ -209,3 +211,6 @@ println("End CP")
             break
         end
     end
+
+
+    AllowableDeviation = getCellValue(getCell(getRow(RecruitmentSheet, 4), 1))
