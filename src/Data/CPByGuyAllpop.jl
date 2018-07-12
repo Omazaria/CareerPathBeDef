@@ -74,8 +74,8 @@ MPObjectives = Vector{ManpowerObjective}()
     # Reading General Information __________________________________________________
 SimulationName = getCellValue(getCell(getRow(GIsheet, 0), 1))
 SaveInputs = (getCellValue(getCell(getRow(GIsheet, 1), 1)) == "Yes")
-Tolerances_MIPGap = getCellValue(getCell(getRow(GIsheet, 2), 1))
-IntegerSolution = (getCellValue(getCell(getRow(GIsheet, 3), 1)) == "Yes")
+IntegerSolution = (getCellValue(getCell(getRow(GIsheet, 2), 1)) == "Yes")
+Tolerances_MIPGap = getCellValue(getCell(getRow(GIsheet, 3), 1))
 SimulationYear = Int(getCellValue(getCell(getRow(GIsheet, 4), 1)))
 
 println("Simulation : $SimulationName, saving input data : $SaveInputs.")
