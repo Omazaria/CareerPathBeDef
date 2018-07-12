@@ -33,11 +33,17 @@ type ManpowerObjective
     Objectives::Vector{String}
     Number::Int
     Relation::String #relation between the diferent levels and / or
+    InitTolerance::Float64
+    EndTolerance::Float64
+    Alfa::Float64
     ManpowerObjective(pri::Int;
                       target::Vector{DataType} = Vector{DataType}(),
                       obj::Vector{String} = Vector{String}(),
                       nb::Int = 0,
-                      rl = "") = new(pri, target, obj, nb, rl)
+                      rl = "",
+                      initT = 0.0,
+                      endT = 0.0,
+                      alfa = 1.0) = new(pri, target, obj, nb, rl, initT, endT, alfa)
 end
 
 TypesDict = Dict{String, DataType}("Academ"=> AcademicLevel,
@@ -150,6 +156,29 @@ println("End CP")
         end
     end
 
+    # Reading Recruitment Max/min __________________________________________________
+
+    NBYears = 0
+
+    MaxRecruitment = Vector{Int}()
+    MinRecruitment = Vector{Int}()
+    recruitMaxRow = getRow(RecruitmentSheet, 1)
+    recruitMinRow = getRow(RecruitmentSheet, 2)
+
+    while true
+        try
+            CellMax = getCellValue(getCell(recruitMaxRow, NBYears+1))
+            CellMin = getCellValue(getCell(recruitMinRow, NBYears+1))
+            NBYears += 1
+            push!(MaxRecruitment, CellMax)
+            push!(MinRecruitment, CellMin)
+        catch
+            break
+        end
+    end
+
+    AllowableDeviation = getCellValue(getCell(getRow(RecruitmentSheet, 4), 1))
+
     # Reading Objective manpower ___________________________________________________
 
     Objnumber = jcall(Objsheet, "getLastRowNum", jint, ())
@@ -158,9 +187,12 @@ println("End CP")
         ObjRow = getRow(Objsheet, i)
         PriorI = getCellValue(getCell(ObjRow, 0))
         NbDemnded = Int(getCellValue(getCell(ObjRow, 1)))
-        push!(MPObjectives, ManpowerObjective(Int(PriorI), nb = NbDemnded))
+        tolInit = getCellValue(getCell(ObjRow, 2))
+        TolEnd =  getCellValue(getCell(ObjRow, 3))
+        Alfa = (tolInit-TolEnd)/(NBYears)
+        push!(MPObjectives, ManpowerObjective(Int(PriorI), nb = NbDemnded, initT = tolInit, endT = TolEnd, alfa = Alfa))
         indexObj = length(MPObjectives)
-        j = 2
+        j = 4
         while true
             try
                 Cellj = getCellValue(getCell(ObjRow, j))
@@ -190,27 +222,3 @@ println("End CP")
         end
     end
 #end
-
-    # Reading Recruitment Max/min __________________________________________________
-
-    NBYears = 0
-
-    MaxRecruitment = Vector{Int}()
-    MinRecruitment = Vector{Int}()
-    recruitMaxRow = getRow(RecruitmentSheet, 1)
-    recruitMinRow = getRow(RecruitmentSheet, 2)
-
-    while true
-        try
-            CellMax = getCellValue(getCell(recruitMaxRow, NBYears+1))
-            CellMin = getCellValue(getCell(recruitMinRow, NBYears+1))
-            NBYears += 1
-            push!(MaxRecruitment, CellMax)
-            push!(MinRecruitment, CellMin)
-        catch
-            break
-        end
-    end
-
-
-    AllowableDeviation = getCellValue(getCell(getRow(RecruitmentSheet, 4), 1))

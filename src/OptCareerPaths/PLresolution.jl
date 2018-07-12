@@ -56,7 +56,7 @@ InitConst = length(InitManpower)
 
 RecruitmentConst = NBYears * 2
 
-GoalsConst = NBYears * length(MPObjectives)
+GoalsConst = (NBYears * length(MPObjectives))*2
 
 RecruitmentDeviation = (NBYears - 1) * 2
 
@@ -112,8 +112,6 @@ for i in 1:Int(RecruitmentConst/2)
     end
 end
 
-        # Goals
-
             # compute which careers go with each goal
 
 SetsPartCPinGoals = Vector{Vector{Vector{Int}}}()
@@ -147,6 +145,8 @@ for i in 1:length(GuyCareerPaths)
     compute_Length(GuyCareerPaths[i])
 end
 
+        # Goals___________________________________________________ (upper bound)
+
             # Initial Manpower participation
 
 TempActualVar = 1
@@ -170,7 +170,7 @@ for imp in 1:length(InitManpower)
         TempActualVar += 1
     end
 end
-println("Final InitMP = $TempActualVar")
+
             # Annual Recruitment participation
 
 for y in 1:NBYears
@@ -199,6 +199,56 @@ for y in 1:NBYears
     end
 end
 
+    # Goals___________________________________________________ (lower bound)
+
+    # Initial Manpower participation
+
+TempActualVar = 1
+for imp in 1:length(InitManpower)
+    for i in 1:length(InitMPPartCP[imp])
+        for j in (1 + InitManpower[imp].Seniority):GuyCareerPaths[InitMPPartCP[imp][i]].Length
+            indx = get_status_index_after_duration(GuyCareerPaths[InitMPPartCP[imp][i]], j)
+            if indx == -1
+                break
+            end
+            for k in 1:length(SetsPartCPinGoals[InitMPPartCP[imp][i]][indx])
+                if (j - InitManpower[imp].Seniority - 1) <= NBYears
+                    A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (j - InitManpower[imp].Seniority - 1)*length(MPObjectives) + SetsPartCPinGoals[InitMPPartCP[imp][i]][indx][k], TempActualVar] = 1
+                end
+            end
+        end
+        TempActualVar += 1
+    end
+end
+
+    # Annual Recruitment participation
+
+for y in 1:NBYears
+    for i in 1:length(GuyCareerPaths)
+        for j in 1:GuyCareerPaths[i].Length # j => year for const
+            indx = get_status_index_after_duration(GuyCareerPaths[i], j)
+            if indx == -1
+                break
+            end
+            for k in 1:length(SetsPartCPinGoals[i][indx])
+                if (y + j - 1) <= NBYears
+                    A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (y - 1)*length(MPObjectives) + (j - 1)*length(MPObjectives) + SetsPartCPinGoals[i][indx][k], InitMPDivisionNb + (y - 1)*length(GuyCareerPaths) + i] = 1 - AttritionAtYear(GuyCareerPaths[i], j)
+                end
+            end
+        end
+    end
+end
+
+    # deviation variables
+for y in 1:NBYears
+for eq in 1:length(MPObjectives)
+
+A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (y - 1)*length(MPObjectives) + eq, InitMPDivisionNb + AnnualRecDivNb +                                  (y - 1)*length(MPObjectives) + eq] =  1
+A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (y - 1)*length(MPObjectives) + eq, InitMPDivisionNb + AnnualRecDivNb + length(MPObjectives) * NBYears + (y - 1)*length(MPObjectives) + eq] = -1
+
+end
+end
+
             # Recruitment deviation
 
 for i in 1:NBYears-1
@@ -219,7 +269,8 @@ end
 sense[1:InitConst] = '='
 sense[(InitConst + 1):(InitConst + Int(RecruitmentConst/2))] = '<'
 sense[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst + RecruitmentConst)] = '>'
-sense[(InitConst + RecruitmentConst + 1):(InitConst + RecruitmentConst + GoalsConst)] = '='
+sense[(InitConst + RecruitmentConst + 1):(InitConst + RecruitmentConst + Int(GoalsConst/2))] = '<'
+sense[(InitConst + RecruitmentConst + Int(GoalsConst/2) + 1):(InitConst + RecruitmentConst + GoalsConst)] = '>'
 sense[(InitConst + RecruitmentConst + GoalsConst + 1):(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1))] = '<'
 sense[(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + 1):(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + (NBYears - 1))] = '>'
 #sense[(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + (NBYears - 1) + 1):end] = '='
@@ -229,11 +280,25 @@ for i in 1:InitConst
 end
 b[(InitConst +                           1):(InitConst + Int(RecruitmentConst/2))] = MaxRecruitment
 b[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst +  RecruitmentConst   )] = MinRecruitment
+# Goals second part
 index = InitConst + RecruitmentConst + 1
 for y in 1:NBYears
     for i in 1:length(MPObjectives)
-        b[index] = MPObjectives[i].Number
+        b[index] = MPObjectives[i].Number*(1 + (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y) )
         index += 1
+        if i == 1
+            print(MPObjectives[i].Number*(1 + (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y) ), " ")
+        end
+    end
+end
+println()
+for y in 1:NBYears
+    for i in 1:length(MPObjectives)
+        b[index] = MPObjectives[i].Number*(1 - (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y))
+        index += 1
+        if i == 1
+            print(MPObjectives[i].Number*(1 - (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y) ), " ")
+        end
     end
 end
 #for y in 1:NBYears
