@@ -36,6 +36,7 @@ type ManpowerObjective
     InitTolerance::Float64
     EndTolerance::Float64
     Alfa::Float64
+    PlotNb::Int
     ManpowerObjective(pri::Int;
                       target::Vector{DataType} = Vector{DataType}(),
                       obj::Vector{String} = Vector{String}(),
@@ -43,7 +44,8 @@ type ManpowerObjective
                       rl = "",
                       initT = 0.0,
                       endT = 0.0,
-                      alfa = 1.0) = new(pri, target, obj, nb, rl, initT, endT, alfa)
+                      alfa = 1.0,
+                      plot = 0) = new(pri, target, obj, nb, rl, initT, endT, alfa, plot)
 end
 
 TypesDict = Dict{String, DataType}("Academ"=> AcademicLevel,
@@ -113,6 +115,7 @@ end
                 CPAttrition = getRow(CPAttritionsheet, i)
                 j = 2
                 push!(GuyCareerPaths, CareerPath())
+                GuyCareerPaths[end].RecruitmentAge = Int(getCellValue(getCell(CPDuration, 12)))
                 while true
                     StLevel = getCellValue(getCell(WorkingCP, j))
                     j+=1
@@ -189,10 +192,11 @@ println("End CP")
         NbDemnded = Int(getCellValue(getCell(ObjRow, 1)))
         tolInit = getCellValue(getCell(ObjRow, 2))
         TolEnd =  getCellValue(getCell(ObjRow, 3))
-        Alfa = (tolInit-TolEnd)/(NBYears)
-        push!(MPObjectives, ManpowerObjective(Int(PriorI), nb = NbDemnded, initT = tolInit, endT = TolEnd, alfa = Alfa))
+        plotnb = getCellValue(getCell(ObjRow, 4))
+        Alfa = (tolInit-TolEnd)/(NBYears-1)
+        push!(MPObjectives, ManpowerObjective(Int(PriorI), nb = NbDemnded, initT = tolInit, endT = TolEnd, alfa = Alfa, plot = plotnb))
         indexObj = length(MPObjectives)
-        j = 4
+        j = 5
         while true
             try
                 Cellj = getCellValue(getCell(ObjRow, j))

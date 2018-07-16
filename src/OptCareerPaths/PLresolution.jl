@@ -1,25 +1,9 @@
-requiredTypes = [ "AcademicLevel", "Affiliation", "Assignment", "CareerStatus", "Job", "Rank", "SubJob", "CareerPath" ]
-
-for reqType in requiredTypes
-    if !isdefined( Symbol( uppercase( string( reqType[ 1 ] ) ) * reqType[ 2:end ] ) )
-        include( joinpath( dirname( Base.source_path() ), "..", "functions", reqType * ".jl" ) )
-    end  # if !isdefined( Symbol( ...
-end
-#println(joinpath( dirname( Base.source_path() ), "..", "..", "..", GuyCareerPathsAll.xlsx ) )
 
 #_______________________________________________________________________________
 # Input variables
 
 MaxCareerPathLength = 40
-
-requiredData = ["CPByGuyAllpop"] # GuyCareerPaths , InitManpower , MPObjectives
-
-for reqData in requiredData
-    if !isdefined( Symbol( uppercase( string( reqData[ 1 ] ) ) * reqData[ 2:end ] ) )
-        include( joinpath( dirname( Base.source_path() ), "..", "Data", reqData * ".jl" ) )
-    end  # if !isdefined( Symbol( ...
-end
-
+# GuyCareerPaths , InitManpower , MPObjectives
 
 #_______________________________________________________________________________
 # Variables number
@@ -284,21 +268,14 @@ b[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst +  RecruitmentConst   )] 
 index = InitConst + RecruitmentConst + 1
 for y in 1:NBYears
     for i in 1:length(MPObjectives)
-        b[index] = MPObjectives[i].Number*(1 + (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y) )
+        b[index] = MPObjectives[i].Number*(1 + (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*(y-1)) )
         index += 1
-        if i == 1
-            print(MPObjectives[i].Number*(1 + (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y) ), " ")
-        end
     end
 end
-println()
 for y in 1:NBYears
     for i in 1:length(MPObjectives)
-        b[index] = MPObjectives[i].Number*(1 - (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y))
+        b[index] = MPObjectives[i].Number*(1 - (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*(y-1)))
         index += 1
-        if i == 1
-            print(MPObjectives[i].Number*(1 - (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*y) ), " ")
-        end
     end
 end
 #for y in 1:NBYears
@@ -350,6 +327,3 @@ for i in 1:NBYears
         YearlyRecruitment[i] += sol.sol[InitMPDivisionNb + (i - 1)*length(GuyCareerPaths) + j]
     end
 end
-
-
-include("WrittingResults.jl")
