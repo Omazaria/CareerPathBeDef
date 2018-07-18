@@ -1,7 +1,6 @@
 #_______________________________________________________________________________
 # Writting results
 
-
 if SaveInputs
     CPworkbookResults = CPworkbook
 else

@@ -142,12 +142,8 @@ for imp in 1:length(InitManpower)
                 break
             end
             for k in 1:length(SetsPartCPinGoals[InitMPPartCP[imp][i]][indx])
-                #if TempActualVar < 220
-                #    print(j - 1, " ")
-                #end
                 if (j - InitManpower[imp].Seniority - 1) <= NBYears
                     A[InitConst + RecruitmentConst + (j - InitManpower[imp].Seniority - 1)*length(MPObjectives) + SetsPartCPinGoals[InitMPPartCP[imp][i]][indx][k], TempActualVar] = 1
-                    #print(TempActualVar, " ")
                 end
             end
         end
