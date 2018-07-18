@@ -9,11 +9,11 @@ ArraysLabels = Dict{Int, Any}() # Priority , Array of lablels
 for i in 1:length(MPObjectives)
     try
         ArraysToPlot[MPObjectives[i].PlotNb] = [ArraysToPlot[MPObjectives[i].PlotNb] RequirementFulfillment[:,i]]
-        ArraysLabels[MPObjectives[i].PlotNb] = [ArraysLabels[MPObjectives[i].PlotNb] MPObjectives[i].Objectives]
+        ArraysLabels[MPObjectives[i].PlotNb] = [ArraysLabels[MPObjectives[i].PlotNb] reduce(*,MPObjectives[i].Objectives)]
     catch
         if MPObjectives[i].PlotNb > 0
             ArraysToPlot[MPObjectives[i].PlotNb] = RequirementFulfillment[:,i]
-            ArraysLabels[MPObjectives[i].PlotNb] = MPObjectives[i].Objectives
+            ArraysLabels[MPObjectives[i].PlotNb] = [reduce(*,MPObjectives[i].Objectives)]
             if ArraysLabels[MPObjectives[i].PlotNb][1] == ""
                 ArraysLabels[MPObjectives[i].PlotNb] = "Total Population"
             end

@@ -21,8 +21,9 @@ type InitMPcluster
     Academiclvl::String
     Seniority::Int
     Nb::Int
+    ActualSeniority::Int
     InitMPcluster()=new("", 0, 0)
-    InitMPcluster(acdlvl::String, senior::Int, nb::Int) = new(acdlvl, senior, nb)
+    InitMPcluster(acdlvl::String, senior::Int, nb::Int) = new(acdlvl, senior, nb, senior)
 end
 
 InitManpower = Vector{InitMPcluster}()

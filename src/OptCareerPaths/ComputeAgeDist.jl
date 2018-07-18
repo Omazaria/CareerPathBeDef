@@ -6,7 +6,7 @@ TempActualVar = 1
 for imp in 1:length(InitManpower)
     for i in 1:length(InitMPPartCP[imp])
         for j in (1 + InitManpower[imp].Seniority):GuyCareerPaths[InitMPPartCP[imp][i]].Length
-            AgeDistribution[j - InitManpower[imp].Seniority, GuyCareerPaths[InitMPPartCP[imp][i]].RecruitmentAge + j - 18] += sol.sol[TempActualVar]
+            AgeDistribution[j - InitManpower[imp].Seniority, GuyCareerPaths[InitMPPartCP[imp][i]].RecruitmentAge + j + InitManpower[imp].ActualSeniority - InitManpower[imp].Seniority - 18] += sol.sol[TempActualVar]
         end
         TempActualVar += 1
     end

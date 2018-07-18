@@ -14,14 +14,22 @@ InitMPPartCP = Array{Vector{Int}}(length(InitManpower))
 InitMPDivisionNb = 0
 for i in 1:length(InitManpower)
     InitIpartCP = Vector{Int}()
-    for j in 1:length(GuyCareerPaths)
-        index = get_status_index_after_duration(GuyCareerPaths[j], InitManpower[i].Seniority + 1)
-        if index == -1
-            continue
+    InitManpower[i].Seniority += 1
+    while length(InitIpartCP) == 0 && InitManpower[i].Seniority > 0
+        InitManpower[i].Seniority -= 1
+        for j in 1:length(GuyCareerPaths)
+            index = get_status_index_after_duration(GuyCareerPaths[j], InitManpower[i].Seniority + 1)
+            if index == -1
+                continue
+            end
+            if contains(get_Name_Level(GuyCareerPaths[j].Path[index], AcademicLevel), InitManpower[i].Academiclvl)
+                push!(InitIpartCP, j)
+            end
         end
-        if contains(get_Name_Level(GuyCareerPaths[j].Path[index], AcademicLevel), InitManpower[i].Academiclvl)
-            push!(InitIpartCP, j)
-        end
+    end
+    if length(InitIpartCP) == 0
+        InitManpower[i].Nb = 0
+        warn("Initial subpopulation \"Academ:$(InitManpower[i].Academiclvl),Seniority:$(InitManpower[i].ActualSeniority)\" is not considered.")
     end
     InitMPPartCP[i] = InitIpartCP
     InitMPDivisionNb += length(InitIpartCP)
