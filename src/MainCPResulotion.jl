@@ -18,6 +18,10 @@ include("OptCareerPaths/PLresolution.jl")
 
 include("OptCareerPaths/WrittingResults.jl")
 
-include("OptCareerPaths/PlottingResults.jl")
+if PlottingResults
+    include("OptCareerPaths/PlottingResults.jl")
+end
 
-include("OptCareerPaths/ComputeAgeDist.jl")
+if AgeDistPlot
+    include("OptCareerPaths/ComputeAgeDist.jl")
+end

@@ -86,7 +86,8 @@ SaveInputs = (getCellValue(getCell(getRow(GIsheet, 1), 1)) == "Yes")
 IntegerSolution = (getCellValue(getCell(getRow(GIsheet, 2), 1)) == "Yes")
 Tolerances_MIPGap = getCellValue(getCell(getRow(GIsheet, 3), 1))
 SimulationYear = Int(getCellValue(getCell(getRow(GIsheet, 4), 1)))
-
+PlottingResults = (getCellValue(getCell(getRow(GIsheet, 5), 1)) == "Yes")
+AgeDistPlot = (getCellValue(getCell(getRow(GIsheet, 6), 1)) == "Yes")
 println("Simulation : $SimulationName, saving input data : $SaveInputs.")
 
 
