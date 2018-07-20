@@ -15,70 +15,22 @@ if !isdefined(:Taro)
     Taro.init()
 end
 
-
-# type for initial manpower described as [Academic Level, Seniority, Personnel Number]
-type InitMPcluster
-    Academiclvl::String
-    Seniority::Int
-    Nb::Int
-    ActualSeniority::Int
-    InitMPcluster()=new("", 0, 0)
-    InitMPcluster(acdlvl::String, senior::Int, nb::Int) = new(acdlvl, senior, nb, senior)
+if !isdefined(:CPworkbook)
+    CPworkbook = Workbook(XlsxFile)
+    GIsheet = getSheet(CPworkbook, "GeneralInfo")
+    CPsheet = getSheet(CPworkbook, "CareerPaths")
+    CPDurationsheet = getSheet(CPworkbook, "CPDurations")
+    CPAttritionsheet = getSheet(CPworkbook, "AttritionRate")
+    InitMPsheet = getSheet(CPworkbook, "InitMP")
+    Objsheet = getSheet(CPworkbook, "Objective")
+    RecruitmentSheet = getSheet(CPworkbook, "Recruitment")
+    SubpopulationSheet = getSheet(CPworkbook, "SubPopulations")
 end
 
 InitManpower = Vector{InitMPcluster}()
 
-type ManpowerObjective
-    priority::Int
-    targetLevel::Vector{DataType}
-    Objectives::Vector{String}
-    Number::Int
-    Relation::String #relation between the diferent levels and / or
-    InitTolerance::Float64
-    EndTolerance::Float64
-    Alfa::Float64
-    PlotNb::Int
-    ManpowerObjective(pri::Int;
-                      target::Vector{DataType} = Vector{DataType}(),
-                      obj::Vector{String} = Vector{String}(),
-                      nb::Int = 0,
-                      rl = "",
-                      initT = 0.0,
-                      endT = 0.0,
-                      alfa = 1.0,
-                      plot = 0) = new(pri, target, obj, nb, rl, initT, endT, alfa, plot)
-end
-
-TypesDict = Dict{String, DataType}("Academ"=> AcademicLevel,
-                                   "Affil"=> Affiliation,
-                                   "Assign"=> Assignment,
-                                   "Rank"=> Rank,
-                                   "Job"=> Job,
-                                   "SubJob"=> SubJob)
-
-type Subpopulation
-    priority::Int
-    Name::String
-    NbRequired::Int
-
-    Subpopulation(;pr = 1, nm = "", nb = 0) = new(pr, nm, nb)
-
-end
 MPObjectives = Vector{ManpowerObjective}()
 
-#begin
-    if !isdefined(:CPworkbook)
-        CPworkbook = Workbook(XlsxFile)
-        GIsheet = getSheet(CPworkbook, "GeneralInfo")
-        CPsheet = getSheet(CPworkbook, "CareerPaths")
-        CPDurationsheet = getSheet(CPworkbook, "CPDurations")
-        CPAttritionsheet = getSheet(CPworkbook, "AttritionRate")
-        InitMPsheet = getSheet(CPworkbook, "InitMP")
-        Objsheet = getSheet(CPworkbook, "Objective")
-        RecruitmentSheet = getSheet(CPworkbook, "Recruitment")
-        SubpopulationSheet = getSheet(CPworkbook, "SubPopulations")
-    end
-#end
 
     # Reading General Information __________________________________________________
 SimulationName = getCellValue(getCell(getRow(GIsheet, 0), 1))
@@ -157,7 +109,7 @@ println("End CP")
     else
         for i in 1:InitMPnumber
             MPRow = getRow(InitMPsheet, i)
-            push!(InitManpower, InitMPcluster(getCellValue(getCell(MPRow, 1)), Int(SimulationYear - getCellValue(getCell(MPRow, 0))), Int(getCellValue(getCell(MPRow, 2)))))
+            push!(InitManpower, InitMPcluster(getCellValue(getCell(MPRow, 1)), getCellValue(getCell(MPRow, 2)), Int(SimulationYear - getCellValue(getCell(MPRow, 0))), Int(getCellValue(getCell(MPRow, 3)))))
         end
     end
 

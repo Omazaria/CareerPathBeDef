@@ -11,6 +11,7 @@ end
 XlsxFile = joinpath( dirname( Base.source_path() ), "..", "SimulationInput.xlsx" )#____________________________________________ Excel File
 
 
+include( "types/DataStructures.jl" )
 
 include( "OptCareerPaths/ReadDataXlsx.jl" )
 

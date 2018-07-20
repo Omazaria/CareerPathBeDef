@@ -22,7 +22,7 @@ for i in 1:length(InitManpower)
             if index == -1
                 continue
             end
-            if contains(get_Name_Level(GuyCareerPaths[j].Path[index], AcademicLevel), InitManpower[i].Academiclvl)
+            if contains(get_Name_Level(GuyCareerPaths[j].Path[index], AcademicLevel), InitManpower[i].Academiclvl) && contains(get_Name_Level(GuyCareerPaths[j].Path[index], Affiliation), InitManpower[i].Affiliation)
                 push!(InitIpartCP, j)
             end
         end
