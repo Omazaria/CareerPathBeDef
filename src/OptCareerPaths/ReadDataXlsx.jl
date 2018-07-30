@@ -25,6 +25,7 @@ if !isdefined(:CPworkbook)
     Objsheet = getSheet(CPworkbook, "Objective")
     RecruitmentSheet = getSheet(CPworkbook, "Recruitment")
     SubpopulationSheet = getSheet(CPworkbook, "SubPopulations")
+    DependenciesSheet = getSheet(CPworkbook, "CPDependecies")
 end
 
 InitManpower = Vector{InitMPcluster}()
@@ -67,7 +68,7 @@ end
             if getCellValue(getCell(WorkingCP, 0)) == 1
                 CPDuration = getRow(CPDurationsheet, i)
                 CPAttrition = getRow(CPAttritionsheet, i)
-                j = 2
+                j = 3
                 push!(GuyCareerPaths, CareerPath())
                 GuyCareerPaths[end].RecruitmentAge = Int(getCellValue(getCell(CPDuration, 12)))
                 while true
@@ -98,7 +99,7 @@ end
             end
         end
     end
-
+    BasicCPNb = Int(length(GuyCareerPaths)/length(SubPopulations))
 println("End CP")
     # Reading Initial manpower _____________________________________________________
 
@@ -180,3 +181,49 @@ println("End CP")
         end
     end
 #end
+
+# Reading Dependencies  ___________________________________________________
+DepNB = Int(getCellValue(getCell(getRow(DependenciesSheet, 0), 1)))
+NBConstDepend = 0
+Dependencies = Vector{Dependency}()
+#println("Dependencies", Dependencies)
+RowIndex = 2
+tempoSet = Vector{Int}()
+
+for i in 1:DepNB
+    nbSets = Int(getCellValue(getCell(getRow(DependenciesSheet, RowIndex), 1)))
+    NBConstDepend += nbSets
+    TempoDep = Dependency()
+    RowIndex += 1
+    for j in 1:nbSets
+        SetRow = getRow(DependenciesSheet, RowIndex)
+        RowIndex += 1
+        cellindex = 1
+        while true
+            try
+                CPinx = Int(getCellValue(getCell(SetRow, cellindex))); cellindex += 1
+                SupPopName = getCellValue(getCell(SetRow, cellindex)); cellindex += 1
+                SubPopIndex = findfirst(x -> x.Name == SupPopName, SubPopulations)
+                push!(tempoSet, CPinx + ((SubPopIndex-1)*BasicCPNb))
+            catch
+                push!(TempoDep.Sets, tempoSet)
+                tempoSet = Vector{Int}()
+                break
+            end
+        end
+
+    end
+
+    SetRow = getRow(DependenciesSheet, RowIndex)
+    RowIndex += 1
+    for i in 1:nbSets
+        push!(TempoDep.Percentages, getCellValue(getCell(SetRow, i)))
+    end
+
+    TempoDep.Priority = Int(getCellValue(getCell(getRow(DependenciesSheet, RowIndex), 1)))
+    RowIndex += 1
+
+    push!(Dependencies, TempoDep)
+
+    RowIndex += 1
+end

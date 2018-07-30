@@ -49,7 +49,7 @@ InitDistSheet = getSheet( CPworkbookResults, "Initial distribution" )
 if InitDistSheet.ptr === Ptr{Void}( 0 )
     InitDistSheet = createSheet( CPworkbookResults, "Initial distribution" )
 end
-
+maxCols = 0
 rowIdx = 0
 Row = createRow(InitDistSheet, rowIdx)
 rowIdx += 1
@@ -85,6 +85,15 @@ for i in 1:length(InitManpower)
 #        else
 #            setCellValue(Cell, 0)
     end
+    maxCols = max(maxCols, cellIdx)
+end
+Row = createRow(InitDistSheet, 0)
+setCellValue(createCell(Row, 0), "SubPop")
+setCellValue(createCell(Row, 1), "Seniority")
+index = 2
+while index < maxCols
+    setCellValue(createCell(Row, index), "CareerPath"); index += 1;
+    setCellValue(createCell(Row, index), "Nb assigned"); index += 1;
 end
 
     # Annual Recruitment
@@ -92,17 +101,9 @@ RecruitmentSheet = getSheet( CPworkbookResults, "Perforemed Recruitment" )
 if RecruitmentSheet.ptr === Ptr{Void}( 0 )
     RecruitmentSheet = createSheet( CPworkbookResults, "Perforemed Recruitment" )
 end
-
+maxCols = 0
 rowIdx = 0
-#Row = createRow(RecruitmentSheet, rowIdx)
 rowIdx += 1
-
-#cellIdx = 1
-#for i in 1:length(GuyCareerPaths)
-#    Cell=createCell(Row, cellIdx); setCellValue(Cell, i)
-#    cellIdx += 1
-#end
-#Cell=createCell(Row, cellIdx); setCellValue(Cell, "sum")
 
 for i in 1:NBYears
     sum = 0
@@ -121,7 +122,16 @@ for i in 1:NBYears
         end
     end
     Cell=createCell(Row, 1); setCellValue(Cell, sum)
-    cellIdx += 1
+    maxCols = max(maxCols, cellIdx - 1)
+end
+
+Row = createRow(RecruitmentSheet, 0)
+setCellValue(createCell(Row, 0), "Year")
+setCellValue(createCell(Row, 1), "Total recruitment")
+index = 2
+while index < maxCols
+    setCellValue(createCell(Row, index), "CareerPath"); index += 1;
+    setCellValue(createCell(Row, index), "Nb recruits"); index += 1;
 end
 
     # Deviation Variables

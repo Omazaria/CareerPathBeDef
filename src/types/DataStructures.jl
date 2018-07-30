@@ -45,3 +45,12 @@ type Subpopulation
     Subpopulation(;pr = 1, nm = "", nb = 0) = new(pr, nm, nb)
 
 end
+
+type Dependency
+
+    Sets::Vector{Vector{Int}}
+    Percentages::Vector{Float32}
+    Priority::Int
+
+    Dependency(;pr = 0) = new(Vector{Vector{Int}}(), Vector{Float32}(), pr)
+end
