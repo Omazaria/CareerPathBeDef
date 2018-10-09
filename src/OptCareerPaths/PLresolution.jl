@@ -253,7 +253,7 @@ for y in 1:NBYears
     end
 end
 
-            # Recruitment deviation
+            # Recruitment deviation *******************************************
 if AllowableDeviation >= 0
     for i in 1:NBYears-1
         for j in 1:length(GuyCareerPaths)
@@ -270,7 +270,7 @@ if AllowableDeviation >= 0
     end
 end
 
-            # Dependencies Equations
+            # Dependencies Equations *******************************************
 tempoDepLine = 0
 for i in 1:length(Dependencies)
     for j in 1:NBYears
@@ -332,8 +332,14 @@ end
 
     # Fill vartypes
 
-vartypes[1:(InitMPDivisionNb + AnnualRecDivNb)] = :Int
-vartypes[(InitMPDivisionNb + AnnualRecDivNb + 1):end] = :Cont
+
+
+if IntegerSolution
+    vartypes[1:(InitMPDivisionNb + AnnualRecDivNb)] = :Int
+    vartypes[(InitMPDivisionNb + AnnualRecDivNb + 1):end] = :Cont
+else
+    vartypes[1:end] = :Cont
+end
 
 writedlm("matrix.txt", A)
 
@@ -345,7 +351,7 @@ stattoendStart = now()
 if IntegerSolution
     sol = mixintprog(Cost, A, sense, b, vartypes, 0, Inf, CplexSolver(CPXPARAM_MIP_Tolerances_MIPGap=Tolerances_MIPGap))#CbcSolver(allowableGap=0.8)) #GurobiSolver(Presolve=0)
 else
-    sol = linprog(Cost, A, sense, b, 0, Inf, CplexSolver())
+    sol = linprog(Cost, A, sense, b, 0, Inf, CplexSolver(CPX_PARAM_EPINT = 0.5))
 end
 stattoendEnd = now()
 println( "ended with: $(sol.status). Elapsed time: $(Dates.canonicalize(Dates.CompoundPeriod(Dates.Millisecond(stattoendEnd - stattoendStart))))." )
