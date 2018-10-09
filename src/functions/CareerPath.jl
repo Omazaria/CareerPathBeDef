@@ -53,7 +53,7 @@ function AttritionAtYear(cp::CareerPath, year::Int)
     while true
         currentyear += 1
 
-        if currentyear > year
+        if currentyear >= year
             break
         else
             if currentyear > sumprenode + cp.Path[index].MinStay

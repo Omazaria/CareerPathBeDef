@@ -1,25 +1,9 @@
-requiredTypes = [ "AcademicLevel", "Affiliation", "Assignment", "CareerStatus", "Job", "Rank", "SubJob", "CareerPath" ]
-
-for reqType in requiredTypes
-    if !isdefined( Symbol( uppercase( string( reqType[ 1 ] ) ) * reqType[ 2:end ] ) )
-        include( joinpath( dirname( Base.source_path() ), "..", "functions", reqType * ".jl" ) )
-    end  # if !isdefined( Symbol( ...
-end
-#println(joinpath( dirname( Base.source_path() ), "..", "..", "..", GuyCareerPathsAll.xlsx ) )
 
 #_______________________________________________________________________________
 # Input variables
 
 MaxCareerPathLength = 40
-
-requiredData = ["CPByGuyAllpop"] # GuyCareerPaths , InitManpower , MPObjectives
-
-for reqData in requiredData
-    if !isdefined( Symbol( uppercase( string( reqData[ 1 ] ) ) * reqData[ 2:end ] ) )
-        include( joinpath( dirname( Base.source_path() ), "..", "Data", reqData * ".jl" ) )
-    end  # if !isdefined( Symbol( ...
-end
-
+# GuyCareerPaths , InitManpower , MPObjectives
 
 #_______________________________________________________________________________
 # Variables number
@@ -30,14 +14,22 @@ InitMPPartCP = Array{Vector{Int}}(length(InitManpower))
 InitMPDivisionNb = 0
 for i in 1:length(InitManpower)
     InitIpartCP = Vector{Int}()
-    for j in 1:length(GuyCareerPaths)
-        index = get_status_index_after_duration(GuyCareerPaths[j], InitManpower[i].Seniority + 1)
-        if index == -1
-            continue
+    InitManpower[i].Seniority += 1
+    while length(InitIpartCP) == 0 && InitManpower[i].Seniority > 0
+        InitManpower[i].Seniority -= 1
+        for j in 1:length(GuyCareerPaths)
+            index = get_status_index_after_duration(GuyCareerPaths[j], InitManpower[i].Seniority + 1)
+            if index == -1
+                continue
+            end
+            if contains(get_Name_Level(GuyCareerPaths[j].Path[index], AcademicLevel), InitManpower[i].Academiclvl) && contains(get_Name_Level(GuyCareerPaths[j].Path[index], Affiliation), InitManpower[i].Affiliation)
+                push!(InitIpartCP, j)
+            end
         end
-        if contains(get_Name_Level(GuyCareerPaths[j].Path[index], AcademicLevel), InitManpower[i].Academiclvl)
-            push!(InitIpartCP, j)
-        end
+    end
+    if length(InitIpartCP) == 0
+        InitManpower[i].Nb = 0
+        warn("Initial subpopulation \"Academ:$(InitManpower[i].Academiclvl),Seniority:$(InitManpower[i].ActualSeniority)\" is not considered.")
     end
     InitMPPartCP[i] = InitIpartCP
     InitMPDivisionNb += length(InitIpartCP)
@@ -47,7 +39,9 @@ AnnualRecDivNb = length(GuyCareerPaths) * NBYears
 
 DeviationVarNb = length(MPObjectives) * NBYears * 2
 
-VarNb = InitMPDivisionNb + AnnualRecDivNb + DeviationVarNb
+DependDeviationVar = NBConstDepend * NBYears * 2
+
+VarNb = InitMPDivisionNb + AnnualRecDivNb + DeviationVarNb + DependDeviationVar
 
 #_______________________________________________________________________________
 # Constraints number
@@ -56,13 +50,17 @@ InitConst = length(InitManpower)
 
 RecruitmentConst = NBYears * 2
 
-GoalsConst = NBYears * length(MPObjectives)
+GoalsConst = (NBYears * length(MPObjectives))*2
 
-RecruitmentDeviation = (NBYears - 1) * 2
+if AllowableDeviation < 0
+    RecruitmentDeviation = 0
+else
+    RecruitmentDeviation = (NBYears - 1) * 2
+end
 
-#DeviationSubPop = length(SubPopulations)* NBYears * 2
+DependenciesConst = NBYears * NBConstDepend
 
-ConstNb = InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation #+ DeviationSubPop
+ConstNb = InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + DependenciesConst
 
 #_______________________________________________________________________________
 # MIP construction
@@ -83,11 +81,20 @@ Cost[1:(InitMPDivisionNb)] = 0
 Cost[1 + InitMPDivisionNb:(InitMPDivisionNb + AnnualRecDivNb)] = 0
 for i in 1:length(MPObjectives)
     for j in 1:NBYears
-        Cost[(InitMPDivisionNb + AnnualRecDivNb) +                                  (j - 1)*length(MPObjectives) + i ] = MPObjectives[i].priority
-        Cost[(InitMPDivisionNb + AnnualRecDivNb) + (length(MPObjectives)*NBYears) + (j - 1)*length(MPObjectives) + i ] = MPObjectives[i].priority
+        Cost[(InitMPDivisionNb + AnnualRecDivNb) +                                  (j - 1)*length(MPObjectives) + i ] = 10^(MPObjectives[i].priority)
+        Cost[(InitMPDivisionNb + AnnualRecDivNb) + (length(MPObjectives)*NBYears) + (j - 1)*length(MPObjectives) + i ] = 10^(MPObjectives[i].priority)
     end
 end
-
+tempoDepLine = 0
+for i in 1:length(Dependencies)
+    for j in 1:NBYears
+        for k in 1:length(Dependencies[i].Sets)
+            Cost[(InitMPDivisionNb + AnnualRecDivNb + DeviationVarNb) +                             (j - 1)*NBConstDepend + tempoDepLine + k ] = 10^(Dependencies[i].Priority)
+            Cost[(InitMPDivisionNb + AnnualRecDivNb + DeviationVarNb) + (NBConstDepend * NBYears) + (j - 1)*NBConstDepend + tempoDepLine + k ] = 10^(Dependencies[i].Priority)
+        end
+    end
+    tempoDepLine += length(Dependencies[i].Sets)
+end
     # Fill A
         # Initial Manpower Constraints
 AdvacmentY = 0
@@ -111,8 +118,6 @@ for i in 1:Int(RecruitmentConst/2)
         A[InitConst + NBYears + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = 1
     end
 end
-
-        # Goals
 
             # compute which careers go with each goal
 
@@ -147,6 +152,8 @@ for i in 1:length(GuyCareerPaths)
     compute_Length(GuyCareerPaths[i])
 end
 
+        # Goals___________________________________________________ (upper bound)
+
             # Initial Manpower participation
 
 TempActualVar = 1
@@ -158,19 +165,15 @@ for imp in 1:length(InitManpower)
                 break
             end
             for k in 1:length(SetsPartCPinGoals[InitMPPartCP[imp][i]][indx])
-                #if TempActualVar < 220
-                #    print(j - 1, " ")
-                #end
                 if (j - InitManpower[imp].Seniority - 1) <= NBYears
                     A[InitConst + RecruitmentConst + (j - InitManpower[imp].Seniority - 1)*length(MPObjectives) + SetsPartCPinGoals[InitMPPartCP[imp][i]][indx][k], TempActualVar] = 1
-                    #print(TempActualVar, " ")
                 end
             end
         end
         TempActualVar += 1
     end
 end
-println("Final InitMP = $TempActualVar")
+
             # Annual Recruitment participation
 
 for y in 1:NBYears
@@ -190,6 +193,7 @@ for y in 1:NBYears
 end
 
             # deviation variables
+
 for y in 1:NBYears
     for eq in 1:length(MPObjectives)
 
@@ -199,53 +203,143 @@ for y in 1:NBYears
     end
 end
 
-            # Recruitment deviation
+    # Goals___________________________________________________ (lower bound)
 
-for i in 1:NBYears-1
-    for j in 1:length(GuyCareerPaths)
-        A[InitConst + RecruitmentConst + GoalsConst + i, InitMPDivisionNb + (i)*length(GuyCareerPaths) + j] = 1
-        A[InitConst + RecruitmentConst + GoalsConst + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -( 1 +  AllowableDeviation)
+    # Initial Manpower participation
+
+TempActualVar = 1
+for imp in 1:length(InitManpower)
+    for i in 1:length(InitMPPartCP[imp])
+        for j in (1 + InitManpower[imp].Seniority):GuyCareerPaths[InitMPPartCP[imp][i]].Length
+            indx = get_status_index_after_duration(GuyCareerPaths[InitMPPartCP[imp][i]], j)
+            if indx == -1
+                break
+            end
+            for k in 1:length(SetsPartCPinGoals[InitMPPartCP[imp][i]][indx])
+                if (j - InitManpower[imp].Seniority - 1) <= NBYears
+                    A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (j - InitManpower[imp].Seniority - 1)*length(MPObjectives) + SetsPartCPinGoals[InitMPPartCP[imp][i]][indx][k], TempActualVar] = 1
+                end
+            end
+        end
+        TempActualVar += 1
     end
 end
 
-for i in 1:NBYears-1
-    for j in 1:length(GuyCareerPaths)
-        A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + i, InitMPDivisionNb + (i)*length(GuyCareerPaths) + j] = 1
-        A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -(1 - AllowableDeviation)
+    # Annual Recruitment participation
+
+for y in 1:NBYears
+    for i in 1:length(GuyCareerPaths)
+        for j in 1:GuyCareerPaths[i].Length # j => year for const
+            indx = get_status_index_after_duration(GuyCareerPaths[i], j)
+            if indx == -1
+                break
+            end
+            for k in 1:length(SetsPartCPinGoals[i][indx])
+                if (y + j - 1) <= NBYears
+                    A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (y - 1)*length(MPObjectives) + (j - 1)*length(MPObjectives) + SetsPartCPinGoals[i][indx][k], InitMPDivisionNb + (y - 1)*length(GuyCareerPaths) + i] = 1 - AttritionAtYear(GuyCareerPaths[i], j)
+                end
+            end
+        end
     end
 end
+
+    # deviation variables
+for y in 1:NBYears
+    for eq in 1:length(MPObjectives)
+
+        A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (y - 1)*length(MPObjectives) + eq, InitMPDivisionNb + AnnualRecDivNb +                                  (y - 1)*length(MPObjectives) + eq] =  1
+        A[InitConst + RecruitmentConst + Int(GoalsConst/2) + (y - 1)*length(MPObjectives) + eq, InitMPDivisionNb + AnnualRecDivNb + length(MPObjectives) * NBYears + (y - 1)*length(MPObjectives) + eq] = -1
+
+    end
+end
+
+            # Recruitment deviation *******************************************
+if AllowableDeviation >= 0
+    for i in 1:NBYears-1
+        for j in 1:length(GuyCareerPaths)
+            A[InitConst + RecruitmentConst + GoalsConst + i, InitMPDivisionNb + (i)*length(GuyCareerPaths) + j] = 1
+            A[InitConst + RecruitmentConst + GoalsConst + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -( 1 +  AllowableDeviation)
+        end
+    end
+
+    for i in 1:NBYears-1
+        for j in 1:length(GuyCareerPaths)
+            A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + i, InitMPDivisionNb + (i)*length(GuyCareerPaths) + j] = 1
+            A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + i, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -(1 - AllowableDeviation)
+        end
+    end
+end
+
+            # Dependencies Equations *******************************************
+tempoDepLine = 0
+for i in 1:length(Dependencies)
+    for j in 1:NBYears
+        for k in 1:length(Dependencies[i].Sets)
+            # Career Paths Variables
+            for l in 1:length(Dependencies[i].Sets)
+                if l == k
+                    for m in 1:length(Dependencies[i].Sets[k])
+                        A[InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + (j-1)*NBConstDepend + tempoDepLine + k, InitMPDivisionNb + length(GuyCareerPaths)*(j - 1) + Dependencies[i].Sets[l][m]] = 1 - Dependencies[i].Percentages[k]
+                    end
+                else
+                    for m in 1:length(Dependencies[i].Sets[k])
+                        A[InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + (j-1)*NBConstDepend + tempoDepLine + k, InitMPDivisionNb + length(GuyCareerPaths)*(j - 1) + Dependencies[i].Sets[l][m]] = Dependencies[i].Percentages[k]
+                    end
+                end
+            end
+
+            # Deviation Variables
+            A[(InitMPDivisionNb + AnnualRecDivNb + DeviationVarNb) +                             (j - 1)*NBConstDepend + tempoDepLine + k ] = 1
+            A[(InitMPDivisionNb + AnnualRecDivNb + DeviationVarNb) + (NBConstDepend * NBYears) + (j - 1)*NBConstDepend + tempoDepLine + k ] = -1
+        end
+    end
+    tempoDepLine += length(Dependencies[i].Sets)
+end
+
     # Fill sense
 
 sense[1:InitConst] = '='
 sense[(InitConst + 1):(InitConst + Int(RecruitmentConst/2))] = '<'
 sense[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst + RecruitmentConst)] = '>'
-sense[(InitConst + RecruitmentConst + 1):(InitConst + RecruitmentConst + GoalsConst)] = '='
-sense[(InitConst + RecruitmentConst + GoalsConst + 1):(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1))] = '<'
-sense[(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + 1):(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + (NBYears - 1))] = '>'
-#sense[(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + (NBYears - 1) + 1):end] = '='
+sense[(InitConst + RecruitmentConst + 1):(InitConst + RecruitmentConst + Int(GoalsConst/2))] = '<'
+sense[(InitConst + RecruitmentConst + Int(GoalsConst/2) + 1):(InitConst + RecruitmentConst + GoalsConst)] = '>'
+if AllowableDeviation >= 0
+    sense[(InitConst + RecruitmentConst + GoalsConst + 1):(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1))] = '<'
+    sense[(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + 1):(InitConst + RecruitmentConst + GoalsConst + (NBYears - 1) + (NBYears - 1))] = '>'
+end
+sense[(InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + 1):(InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + DependenciesConst)] = '='
+
     # Fill b
 for i in 1:InitConst
     b[i] = InitManpower[i].Nb
 end
 b[(InitConst +                           1):(InitConst + Int(RecruitmentConst/2))] = MaxRecruitment
 b[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst +  RecruitmentConst   )] = MinRecruitment
+# Goals second part
 index = InitConst + RecruitmentConst + 1
 for y in 1:NBYears
     for i in 1:length(MPObjectives)
-        b[index] = MPObjectives[i].Number
+        b[index] = MPObjectives[i].Number*(1 + (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*(y-1)) )
         index += 1
     end
 end
-#for y in 1:NBYears
-#    for i in 1:length(SubPopulations)
-#        b[index] = SubPopulations[i].NbRequired
-#        index += 1
-#    end
-#end
+for y in 1:NBYears
+    for i in 1:length(MPObjectives)
+        b[index] = MPObjectives[i].Number*(1 - (MPObjectives[i].InitTolerance - (MPObjectives[i].Alfa)*(y-1)))
+        index += 1
+    end
+end
+
     # Fill vartypes
 
-vartypes[1:(InitMPDivisionNb + AnnualRecDivNb)] = :Int
-vartypes[(InitMPDivisionNb + AnnualRecDivNb + 1):end] = :Cont
+
+
+if IntegerSolution
+    vartypes[1:(InitMPDivisionNb + AnnualRecDivNb)] = :Int
+    vartypes[(InitMPDivisionNb + AnnualRecDivNb + 1):end] = :Cont
+else
+    vartypes[1:end] = :Cont
+end
 
 writedlm("matrix.txt", A)
 
@@ -257,7 +351,7 @@ stattoendStart = now()
 if IntegerSolution
     sol = mixintprog(Cost, A, sense, b, vartypes, 0, Inf, CplexSolver(CPXPARAM_MIP_Tolerances_MIPGap=Tolerances_MIPGap))#CbcSolver(allowableGap=0.8)) #GurobiSolver(Presolve=0)
 else
-    sol = linprog(Cost, A, sense, b, 0, Inf, CplexSolver())
+    sol = linprog(Cost, A, sense, b, 0, Inf, CplexSolver(CPX_PARAM_EPINT = 0.5))
 end
 stattoendEnd = now()
 println( "ended with: $(sol.status). Elapsed time: $(Dates.canonicalize(Dates.CompoundPeriod(Dates.Millisecond(stattoendEnd - stattoendStart))))." )
@@ -285,6 +379,3 @@ for i in 1:NBYears
         YearlyRecruitment[i] += sol.sol[InitMPDivisionNb + (i - 1)*length(GuyCareerPaths) + j]
     end
 end
-
-
-include("WrittingResults.jl")

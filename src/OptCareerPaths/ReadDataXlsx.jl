@@ -15,69 +15,32 @@ if !isdefined(:Taro)
     Taro.init()
 end
 
-
-# type for initial manpower described as [Academic Level, Seniority, Personnel Number]
-type InitMPcluster
-    Academiclvl::String
-    Seniority::Int
-    Nb::Int
-    InitMPcluster()=new("", 0, 0)
-    InitMPcluster(acdlvl::String, senior::Int, nb::Int) = new(acdlvl, senior, nb)
+if !isdefined(:CPworkbook)
+    CPworkbook = Workbook(XlsxFile)
+    GIsheet = getSheet(CPworkbook, "GeneralInfo")
+    CPsheet = getSheet(CPworkbook, "CareerPaths")
+    CPDurationsheet = getSheet(CPworkbook, "CPDurations")
+    CPAttritionsheet = getSheet(CPworkbook, "AttritionRate")
+    InitMPsheet = getSheet(CPworkbook, "InitMP")
+    Objsheet = getSheet(CPworkbook, "Objective")
+    RecruitmentSheet = getSheet(CPworkbook, "Recruitment")
+    SubpopulationSheet = getSheet(CPworkbook, "SubPopulations")
+    DependenciesSheet = getSheet(CPworkbook, "CPDependecies")
 end
 
 InitManpower = Vector{InitMPcluster}()
 
-type ManpowerObjective
-    priority::Int
-    targetLevel::Vector{DataType}
-    Objectives::Vector{String}
-    Number::Int
-    Relation::String #relation between the diferent levels and / or
-    ManpowerObjective(pri::Int;
-                      target::Vector{DataType} = Vector{DataType}(),
-                      obj::Vector{String} = Vector{String}(),
-                      nb::Int = 0,
-                      rl = "") = new(pri, target, obj, nb, rl)
-end
-
-TypesDict = Dict{String, DataType}("Academ"=> AcademicLevel,
-                                   "Affil"=> Affiliation,
-                                   "Assign"=> Assignment,
-                                   "Rank"=> Rank,
-                                   "Job"=> Job,
-                                   "SubJob"=> SubJob)
-
-type Subpopulation
-    priority::Int
-    Name::String
-    NbRequired::Int
-
-    Subpopulation(;pr = 1, nm = "", nb = 0) = new(pr, nm, nb)
-
-end
 MPObjectives = Vector{ManpowerObjective}()
 
-#begin
-    if !isdefined(:CPworkbook)
-        CPworkbook = Workbook(XlsxFile)
-        GIsheet = getSheet(CPworkbook, "GeneralInfo")
-        CPsheet = getSheet(CPworkbook, "CareerPaths")
-        CPDurationsheet = getSheet(CPworkbook, "CPDurations")
-        CPAttritionsheet = getSheet(CPworkbook, "AttritionRate")
-        InitMPsheet = getSheet(CPworkbook, "InitMP")
-        Objsheet = getSheet(CPworkbook, "Objective")
-        RecruitmentSheet = getSheet(CPworkbook, "Recruitment")
-        SubpopulationSheet = getSheet(CPworkbook, "SubPopulations")
-    end
-#end
 
     # Reading General Information __________________________________________________
 SimulationName = getCellValue(getCell(getRow(GIsheet, 0), 1))
 SaveInputs = (getCellValue(getCell(getRow(GIsheet, 1), 1)) == "Yes")
-Tolerances_MIPGap = getCellValue(getCell(getRow(GIsheet, 2), 1))
-IntegerSolution = (getCellValue(getCell(getRow(GIsheet, 3), 1)) == "Yes")
+IntegerSolution = (getCellValue(getCell(getRow(GIsheet, 2), 1)) == "Yes")
+Tolerances_MIPGap = getCellValue(getCell(getRow(GIsheet, 3), 1))
 SimulationYear = Int(getCellValue(getCell(getRow(GIsheet, 4), 1)))
-
+PlottingResults = (getCellValue(getCell(getRow(GIsheet, 5), 1)) == "Yes")
+AgeDistPlot = (getCellValue(getCell(getRow(GIsheet, 6), 1)) == "Yes")
 println("Simulation : $SimulationName, saving input data : $SaveInputs.")
 
 
@@ -105,8 +68,9 @@ end
             if getCellValue(getCell(WorkingCP, 0)) == 1
                 CPDuration = getRow(CPDurationsheet, i)
                 CPAttrition = getRow(CPAttritionsheet, i)
-                j = 2
+                j = 3
                 push!(GuyCareerPaths, CareerPath())
+                GuyCareerPaths[end].RecruitmentAge = Int(getCellValue(getCell(CPDuration, 12)))
                 while true
                     StLevel = getCellValue(getCell(WorkingCP, j))
                     j+=1
@@ -135,7 +99,7 @@ end
             end
         end
     end
-
+    BasicCPNb = Int(length(GuyCareerPaths)/length(SubPopulations))
 println("End CP")
     # Reading Initial manpower _____________________________________________________
 
@@ -146,9 +110,32 @@ println("End CP")
     else
         for i in 1:InitMPnumber
             MPRow = getRow(InitMPsheet, i)
-            push!(InitManpower, InitMPcluster(getCellValue(getCell(MPRow, 1)), Int(SimulationYear - getCellValue(getCell(MPRow, 0))), Int(getCellValue(getCell(MPRow, 2)))))
+            push!(InitManpower, InitMPcluster(getCellValue(getCell(MPRow, 1)), getCellValue(getCell(MPRow, 2)), Int(SimulationYear - getCellValue(getCell(MPRow, 0))), Int(getCellValue(getCell(MPRow, 3)))))
         end
     end
+
+    # Reading Recruitment Max/min __________________________________________________
+
+    NBYears = 0
+
+    MaxRecruitment = Vector{Int}()
+    MinRecruitment = Vector{Int}()
+    recruitMaxRow = getRow(RecruitmentSheet, 1)
+    recruitMinRow = getRow(RecruitmentSheet, 2)
+
+    while true
+        try
+            CellMax = getCellValue(getCell(recruitMaxRow, NBYears+1))
+            CellMin = getCellValue(getCell(recruitMinRow, NBYears+1))
+            NBYears += 1
+            push!(MaxRecruitment, CellMax)
+            push!(MinRecruitment, CellMin)
+        catch
+            break
+        end
+    end
+
+    AllowableDeviation = getCellValue(getCell(getRow(RecruitmentSheet, 4), 1))
 
     # Reading Objective manpower ___________________________________________________
 
@@ -158,9 +145,13 @@ println("End CP")
         ObjRow = getRow(Objsheet, i)
         PriorI = getCellValue(getCell(ObjRow, 0))
         NbDemnded = Int(getCellValue(getCell(ObjRow, 1)))
-        push!(MPObjectives, ManpowerObjective(Int(PriorI), nb = NbDemnded))
+        tolInit = getCellValue(getCell(ObjRow, 2))
+        TolEnd =  getCellValue(getCell(ObjRow, 3))
+        plotnb = getCellValue(getCell(ObjRow, 4))
+        Alfa = (tolInit-TolEnd)/(NBYears-1)
+        push!(MPObjectives, ManpowerObjective(Int(PriorI), nb = NbDemnded, initT = tolInit, endT = TolEnd, alfa = Alfa, plot = plotnb))
         indexObj = length(MPObjectives)
-        j = 2
+        j = 5
         while true
             try
                 Cellj = getCellValue(getCell(ObjRow, j))
@@ -191,26 +182,48 @@ println("End CP")
     end
 #end
 
-    # Reading Recruitment Max/min __________________________________________________
+# Reading Dependencies  ___________________________________________________
+DepNB = Int(getCellValue(getCell(getRow(DependenciesSheet, 0), 1)))
+NBConstDepend = 0
+Dependencies = Vector{Dependency}()
+#println("Dependencies", Dependencies)
+RowIndex = 2
+tempoSet = Vector{Int}()
 
-    NBYears = 0
-
-    MaxRecruitment = Vector{Int}()
-    MinRecruitment = Vector{Int}()
-    recruitMaxRow = getRow(RecruitmentSheet, 1)
-    recruitMinRow = getRow(RecruitmentSheet, 2)
-
-    while true
-        try
-            CellMax = getCellValue(getCell(recruitMaxRow, NBYears+1))
-            CellMin = getCellValue(getCell(recruitMinRow, NBYears+1))
-            NBYears += 1
-            push!(MaxRecruitment, CellMax)
-            push!(MinRecruitment, CellMin)
-        catch
-            break
+for i in 1:DepNB
+    nbSets = Int(getCellValue(getCell(getRow(DependenciesSheet, RowIndex), 1)))
+    NBConstDepend += nbSets
+    TempoDep = Dependency()
+    RowIndex += 1
+    for j in 1:nbSets
+        SetRow = getRow(DependenciesSheet, RowIndex)
+        RowIndex += 1
+        cellindex = 1
+        while true
+            try
+                CPinx = Int(getCellValue(getCell(SetRow, cellindex))); cellindex += 1
+                SupPopName = getCellValue(getCell(SetRow, cellindex)); cellindex += 1
+                SubPopIndex = findfirst(x -> x.Name == SupPopName, SubPopulations)
+                push!(tempoSet, CPinx + ((SubPopIndex-1)*BasicCPNb))
+            catch
+                push!(TempoDep.Sets, tempoSet)
+                tempoSet = Vector{Int}()
+                break
+            end
         end
+
     end
 
+    SetRow = getRow(DependenciesSheet, RowIndex)
+    RowIndex += 1
+    for i in 1:nbSets
+        push!(TempoDep.Percentages, getCellValue(getCell(SetRow, i)))
+    end
 
-    AllowableDeviation = getCellValue(getCell(getRow(RecruitmentSheet, 4), 1))
+    TempoDep.Priority = Int(getCellValue(getCell(getRow(DependenciesSheet, RowIndex), 1)))
+    RowIndex += 1
+
+    push!(Dependencies, TempoDep)
+
+    RowIndex += 1
+end
