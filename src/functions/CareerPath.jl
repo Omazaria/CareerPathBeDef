@@ -65,3 +65,25 @@ function AttritionAtYear(cp::CareerPath, year::Int)
     end
     return attrition
 end
+
+function RemainingAtYear(cp::CareerPath, year::Int)
+
+    currentyear = 0
+    RemainingRate = 1
+    index = 1
+    sumprenode = 0
+    while true
+        currentyear += 1
+
+        if currentyear >= year
+            break
+        else
+            if currentyear > sumprenode + cp.Path[index].MinStay
+                sumprenode += cp.Path[index].MinStay
+                index += 1
+            end
+            RemainingRate *= 1 - cp.Path[index].Attrition
+        end
+    end
+    return RemainingRate
+end

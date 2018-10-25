@@ -20,7 +20,7 @@ type CareerStatus
     MinStay::Int
     MaxStay::Int
 
-    Attrition::Float16
+    Attrition::Float64
 
     CareerStatus(;academicLevel::AbstractLevel = AcademicLevel(),
                   rank::AbstractLevel = Rank(),
@@ -30,7 +30,7 @@ type CareerStatus
                   subjob::AbstractLevel = SubJob(),
                   min::Int = 0,
                   max::Int = 0,
-                  attrition::Float16 = 0) = new(academicLevel, rank, assignment, affiliation, job, subjob, min, max, attrition)
+                  attrition::Float64 = Float64(0)) = new(academicLevel, rank, assignment, affiliation, job, subjob, min, max, attrition)
 
     function CareerStatus(cs::CareerStatus)
         ncs = new()

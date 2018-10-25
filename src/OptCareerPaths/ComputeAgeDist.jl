@@ -17,7 +17,12 @@ for y in 1:NBYears
     for i in 1:length(GuyCareerPaths)
         for j in 1:GuyCareerPaths[i].Length # j => year for const
             if (y + j - 1) <= NBYears
-                AgeDistribution[y + j - 1, GuyCareerPaths[i].RecruitmentAge + j - 18] +=  (1 - AttritionAtYear(GuyCareerPaths[i], j))* sol.sol[ InitMPDivisionNb + (y - 1)*length(GuyCareerPaths) + i]
+                if y == 1
+                    if (1 - RemainingAtYear(GuyCareerPaths[i], j)) > 1 || (1 - RemainingAtYear(GuyCareerPaths[i], j)) < 0
+                        println("cp ", i, " y = ", j, " got ", 1 - RemainingAtYear(GuyCareerPaths[i], j))
+                    end
+                end
+                AgeDistribution[y + j - 1, GuyCareerPaths[i].RecruitmentAge + j - 18] +=  ( RemainingAtYear(GuyCareerPaths[i], j))* sol.sol[ InitMPDivisionNb + (y - 1)*length(GuyCareerPaths) + i]
             end
         end
     end

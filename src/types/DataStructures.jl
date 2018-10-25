@@ -12,7 +12,7 @@ end
 type ManpowerObjective
     priority::Int
     targetLevel::Vector{DataType}
-    Objectives::Vector{String}
+    Objectives::Vector{Vector{String}}
     Number::Int
     Relation::String #relation between the diferent levels and / or
     InitTolerance::Float64
@@ -21,7 +21,7 @@ type ManpowerObjective
     PlotNb::Int
     ManpowerObjective(pri::Int;
                       target::Vector{DataType} = Vector{DataType}(),
-                      obj::Vector{String} = Vector{String}(),
+                      obj::Vector{Vector{String}} = Vector{Vector{String}}(),
                       nb::Int = 0,
                       rl = "",
                       initT = 0.0,

@@ -1,4 +1,28 @@
 #_______________________________________________________________________________
+# Computing results
+
+RequirementFulfillment = zeros(Float64, NBYears, length(MPObjectives))
+sumi = 0
+for i in 1:NBYears
+    for j in 1:length(MPObjectives)
+        for k in 1:(InitMPDivisionNb + AnnualRecDivNb)
+            if A[InitConst + RecruitmentConst + (i - 1)*length(MPObjectives) + j, k] != 0
+                RequirementFulfillment[i, j] +=  sol.sol[k]*A[InitConst + RecruitmentConst + (i - 1)*length(MPObjectives) + j, k]#round(Int,)
+            end
+        end
+    end
+end
+
+YearlyRecruitment = zeros(Float64, NBYears)
+
+for i in 1:NBYears
+    for j in 1:length(GuyCareerPaths)
+        YearlyRecruitment[i] += sol.sol[InitMPDivisionNb + (i - 1)*length(GuyCareerPaths) + j]
+    end
+end
+
+
+#_______________________________________________________________________________
 # Writting results
 
 if SaveInputs
@@ -21,7 +45,9 @@ cellIdx = 1
 for i in 1:length(MPObjectives)
     obj = ""
     for j in 1:length(MPObjectives[i].Objectives)
-        obj = obj * MPObjectives[i].Objectives[j]
+        for k in 1:length(MPObjectives[i].Objectives[j])
+            obj = obj * MPObjectives[i].Objectives[j][k]
+        end
     end
     Cell=createCell(Row, cellIdx); setCellValue(Cell, obj)
     cellIdx += 1
