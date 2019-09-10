@@ -77,7 +77,7 @@ end
                     NdLevel = getCellValue(getCell(WorkingCP, j))
                     j+=1
                     StatusDuration = Int(getCellValue(getCell(CPDuration, length(GuyCareerPaths[end].Path))))
-                    attr = Float16(getCellValue(getCell(CPAttrition, length(GuyCareerPaths[end].Path))))
+                    attr = Float64(getCellValue(getCell(CPAttrition, length(GuyCareerPaths[end].Path))))
                     ActivateLevel(GuyCareerPaths[end], AcademicLevel)
                     ActivateLevel(GuyCareerPaths[end], Assignment)
                     addStateToCareerPath(GuyCareerPaths[end], CareerStatus(academicLevel=AcademicLevel(StLevel), affiliation=Affiliation(SubPopulations[aff].Name), assignment=Assignment(NdLevel), min=StatusDuration, max=StatusDuration, attrition=attr))

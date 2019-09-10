@@ -10,10 +10,7 @@ for reqType in requiredTypes
     end  # if !isdefined( Symbol( ...
 end
 
-if !isdefined(:Taro)
-    using Taro, JavaCall
-    Taro.init()
-end
+
 
 if !isdefined(:CPworkbook)
     CPworkbook = Workbook(XlsxFile)
@@ -125,17 +122,17 @@ println("End CP")
     NBYears = 0
 
     MaxRecruitment = Vector{Int}()
-    MinRecruitment = Vector{Int}()
+    #MinRecruitment = Vector{Int}()
     recruitMaxRow = getRow(RecruitmentSheet, 1)
-    recruitMinRow = getRow(RecruitmentSheet, 2)
+    #recruitMinRow = getRow(RecruitmentSheet, 2)
 
     while true
         try
             CellMax = getCellValue(getCell(recruitMaxRow, NBYears+1))
-            CellMin = getCellValue(getCell(recruitMinRow, NBYears+1))
+            #CellMin = getCellValue(getCell(recruitMinRow, NBYears+1))
             NBYears += 1
             push!(MaxRecruitment, CellMax)
-            push!(MinRecruitment, CellMin)
+            #push!(MinRecruitment, CellMin)
         catch
             break
         end
@@ -271,7 +268,9 @@ for i in 1:length(InitManpower)
     end
     if length(InitIpartCP) == 0
         InitManpower[i].Nb = 0
-        warn("Initial subpopulation \"Academ:$(InitManpower[i].Academiclvl),Seniority:$(InitManpower[i].ActualSeniority)\" is not considered.")
+        warn("Initial subpopulation \"Academ:$(InitManpower[i].Academiclvl), Affiliation:$(InitManpower[i].Affiliation) , Seniority:$(InitManpower[i].ActualSeniority)\" is not considered.")
+#    else
+#        println("Initial subpopulation \"Academ:$(InitManpower[i].Academiclvl), Affiliation:$(InitManpower[i].Affiliation) , Seniority:$(InitManpower[i].ActualSeniority)\" is considered.")
     end
     InitMPPartCP[i] = InitIpartCP
     InitMPDivisionNb += length(InitIpartCP)

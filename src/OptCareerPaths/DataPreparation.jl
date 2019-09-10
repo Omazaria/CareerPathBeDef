@@ -20,7 +20,7 @@ VarNb = InitMPDivisionNb + AnnualRecDivNb + DeviationVarNb + DependDeviationVar
 
 InitConst = length(InitManpower)
 
-RecruitmentConst = 0 #NBYears * 2
+RecruitmentConst = 0 #NBYears
 
 GoalsConst = (NBYears * length(MPObjectives))*2
 
@@ -41,6 +41,8 @@ ConstNb = InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + Dep
 
 Cost = Array{Float64}(VarNb) # Done
 
+println("Allocating a ", ConstNb, "x", VarNb, " Array")
+
 A = zeros(Float64, ConstNb, VarNb) # Init Done, Rec Done, Goal Done
 
 sense = Array{Char}(ConstNb) # Done
@@ -55,8 +57,8 @@ Cost[1 + InitMPDivisionNb:(InitMPDivisionNb + AnnualRecDivNb)] = 1
 for i in 1:length(MPObjectives)
     for j in 1:NBYears
         if MPObjectives[i].priority >= 0
-            Cost[(InitMPDivisionNb + AnnualRecDivNb) +                                  (j - 1)*length(MPObjectives) + i ] = (10^(MPObjectives[i].priority))#*j
-            Cost[(InitMPDivisionNb + AnnualRecDivNb) + (length(MPObjectives)*NBYears) + (j - 1)*length(MPObjectives) + i ] = (10^(MPObjectives[i].priority))#*j
+            Cost[(InitMPDivisionNb + AnnualRecDivNb) +                                  (j - 1)*length(MPObjectives) + i ] = (10^(MPObjectives[i].priority))*((j > 7)? 10 : 1)
+            Cost[(InitMPDivisionNb + AnnualRecDivNb) + (length(MPObjectives)*NBYears) + (j - 1)*length(MPObjectives) + i ] = (10^(MPObjectives[i].priority))*((j > 7)? 10 : 1)
         else
             Cost[(InitMPDivisionNb + AnnualRecDivNb) +                                  (j - 1)*length(MPObjectives) + i ] = 0
             Cost[(InitMPDivisionNb + AnnualRecDivNb) + (length(MPObjectives)*NBYears) + (j - 1)*length(MPObjectives) + i ] = 0
@@ -203,9 +205,9 @@ end
 if AllowableDeviation >= 0
     for i in 1:NBYears-1
         for j in 1:length(GuyCareerPaths)
-            if i < 0#42
-                A[InitConst + RecruitmentConst + GoalsConst + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i  )*length(GuyCareerPaths) + j] = 1
-                A[InitConst + RecruitmentConst + GoalsConst + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -( 1 +  (1/Float64(i)) )
+            if i < YearsOfAllowedRecruitmentDev#0
+                A[InitConst + RecruitmentConst + GoalsConst + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i  )*length(GuyCareerPaths) + j] = 0
+                A[InitConst + RecruitmentConst + GoalsConst + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = 0
             else
                 A[InitConst + RecruitmentConst + GoalsConst + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i  )*length(GuyCareerPaths) + j] = 1
                 A[InitConst + RecruitmentConst + GoalsConst + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -( 1 +  AllowableDeviation)
@@ -215,9 +217,9 @@ if AllowableDeviation >= 0
 
     for i in 1:NBYears-1
         for j in 1:length(GuyCareerPaths)
-            if i  < 0#42
-                A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1)*length(GuyCareerPaths) + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i  )*length(GuyCareerPaths) + j] = 1
-                A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1)*length(GuyCareerPaths) + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -(1 - (1/Float64(i)))
+            if i < YearsOfAllowedRecruitmentDev#0
+                A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1)*length(GuyCareerPaths) + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i  )*length(GuyCareerPaths) + j] = 0
+                A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1)*length(GuyCareerPaths) + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = 0
             else
                 A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1)*length(GuyCareerPaths) + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i  )*length(GuyCareerPaths) + j] = 1
                 A[InitConst + RecruitmentConst + GoalsConst + (NBYears - 1)*length(GuyCareerPaths) + (i-1)*(length(GuyCareerPaths)) + j, InitMPDivisionNb + (i-1)*length(GuyCareerPaths) + j] = -(1 - AllowableDeviation)
@@ -274,8 +276,8 @@ sense[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst + RecruitmentConst)] 
 sense[(InitConst + RecruitmentConst + 1):(InitConst + RecruitmentConst + Int(GoalsConst/2))] = '<'
 sense[(InitConst + RecruitmentConst + Int(GoalsConst/2) + 1):(InitConst + RecruitmentConst + GoalsConst)] = '>'
 if AllowableDeviation >= 0
-    sense[(InitConst + RecruitmentConst + GoalsConst + 1):(InitConst + RecruitmentConst + GoalsConst + Int(RecruitmentDeviation/2))] = '<'
-    sense[(InitConst + RecruitmentConst + GoalsConst + Int(RecruitmentDeviation/2) + 1):(InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation)] = '>'
+    sense[(InitConst + RecruitmentConst + GoalsConst +                               1):(InitConst + RecruitmentConst + GoalsConst + Int(RecruitmentDeviation/2))] = '<'
+    sense[(InitConst + RecruitmentConst + GoalsConst + Int(RecruitmentDeviation/2) + 1):(InitConst + RecruitmentConst + GoalsConst +     RecruitmentDeviation   )] = '>'
 end
 sense[(InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + 1):(InitConst + RecruitmentConst + GoalsConst + RecruitmentDeviation + DependenciesConst)] = '='
 
@@ -285,7 +287,7 @@ for i in 1:InitConst
 end
 try
     b[(InitConst +                           1):(InitConst + Int(RecruitmentConst/2))] = MaxRecruitment
-    b[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst +  RecruitmentConst   )] = MinRecruitment
+    #b[(InitConst + Int(RecruitmentConst/2) + 1):(InitConst +  RecruitmentConst   )] = MinRecruitment
 end
 # Goals second part
 index = InitConst + RecruitmentConst + 1
@@ -324,7 +326,7 @@ if CleanMem
     SubPopulations = 0
     GuyCareerPaths = 0
     MaxRecruitment = 0
-    MinRecruitment = 0
+    #MinRecruitment = 0
     Dependencies = 0
     tempoSet = 0
 
